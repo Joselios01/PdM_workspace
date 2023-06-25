@@ -86,6 +86,8 @@ int main(void)
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
   /* USER CODE BEGIN 2 */
+  BSP_LED_Init(LED3);
+
 
   /* USER CODE END 2 */
 
@@ -94,7 +96,8 @@ int main(void)
   while (1)
   {
     /* USER CODE END WHILE */
-
+	  BSP_LED_Toggle(LED3);
+	  HAL_Delay(50);
     /* USER CODE BEGIN 3 */
   }
   /* USER CODE END 3 */
