@@ -5,8 +5,7 @@
  *      Author: joseluis
  */
 
-#ifndef BSP_NUCLEO_F429_STM32F429ZI_H_
-#define BSP_NUCLEO_F429_STM32F429ZI_H_
+
 
 #include "stm32f4xx_hal.h"
 
@@ -46,8 +45,11 @@ typedef enum
                                                                     {__HAL_RCC_GPIOB_CLK_DISABLE();   }} while(0)
 
 
+void  BSP_LED_Init(Led_TypeDef Led);
+void  BSP_LED_On(Led_TypeDef Led);
+void  BSP_LED_Off(Led_TypeDef Led);
+void  BSP_LED_Toggle(Led_TypeDef Led);
 
 
 
 
-#endif /* BSP_NUCLEO_F429_STM32F429ZI_H_ */
