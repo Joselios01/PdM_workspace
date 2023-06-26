@@ -31,8 +31,8 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-#define	Delay_Led				1000 //frecuencia base para leds
-#define	Delay_Refresh_Button	50  //frecuencia base para refresco led
+#define	Delay_Led				100 //frecuencia base para leds
+#define	Delay_Rebote_Button	500  //frecuencia base para refresco led
 
 /* USER CODE END PD */
 
@@ -44,6 +44,8 @@
 /* Private variables ---------------------------------------------------------*/
 
 /* USER CODE BEGIN PV */
+uint8_t State;
+
 
 /* USER CODE END PV */
 
@@ -77,7 +79,7 @@ int main(void)
   BSP_LED_Init(LED1);  // inicializa los puestos fisicos cableados de la board
   BSP_LED_Init(LED2);  // BSP -> Board Support Package
   BSP_LED_Init(LED3);
-
+  BSP_PB_Init(BUTTON_USER, BUTTON_MODE_GPIO); //inicializa boton BSP en modo GPIO
   /* USER CODE END Init */
 
   /* Configure the system clock */
@@ -89,7 +91,7 @@ int main(void)
 
   /* Initialize all configured peripherals */
   /* USER CODE BEGIN 2 */
-
+  State = 0; //variable que selecciona el estado a mostrar 0=nada, 1=izquierda, 2=derecha
 
   /* USER CODE END 2 */
 
@@ -99,21 +101,67 @@ int main(void)
   {
     /* USER CODE END WHILE */
 
+	  if (BSP_PB_GetState(BUTTON_USER))
+	  {
+		  HAL_Delay(Delay_Rebote_Button);
+		  if (!BSP_PB_GetState(BUTTON_USER))
+		  {
+			  State++;
+			  if (State == 3)
+	        	  State=0;
+		  }
+	  }
 
 
-	  BSP_LED_Toggle(LED1);
-	  HAL_Delay(Delay_Led);
-	  BSP_LED_Toggle(LED1);
-	  HAL_Delay(Delay_Led);
-	  BSP_LED_Toggle(LED2);
-	  HAL_Delay(Delay_Led);
-	  BSP_LED_Toggle(LED2);
-	  HAL_Delay(Delay_Led);
-	  BSP_LED_Toggle(LED3);
-	  HAL_Delay(Delay_Led);
-	  BSP_LED_Toggle(LED3);
-	  HAL_Delay(Delay_Led);
-    /* USER CODE BEGIN 3 */
+	  switch (State)
+      {
+		  case 0:
+		  {
+			  BSP_LED_Off(LED1);
+			  BSP_LED_Off(LED2);
+			  BSP_LED_Off(LED3);
+			  break;
+		  }
+		  case 1:
+		  {
+			  BSP_LED_On(LED1);
+			  BSP_LED_Off(LED2);
+			  BSP_LED_Off(LED3);
+			  HAL_Delay(Delay_Led);
+
+			  BSP_LED_Off(LED1);
+			  BSP_LED_On(LED2);
+			  BSP_LED_Off(LED3);
+			  HAL_Delay(Delay_Led);
+
+			  BSP_LED_Off(LED1);
+			  BSP_LED_Off(LED2);
+			  BSP_LED_Off(LED3);
+			  HAL_Delay(Delay_Led);
+			  break;
+		  }
+
+		  case 2:
+		  {
+			  BSP_LED_Off(LED1);
+			  BSP_LED_Off(LED2);
+			  BSP_LED_Off(LED3);
+			  HAL_Delay(Delay_Led);
+
+			  BSP_LED_Off(LED1);
+			  BSP_LED_Off(LED2);
+			  BSP_LED_On(LED3);
+			  HAL_Delay(Delay_Led);
+
+			  BSP_LED_Off(LED1);
+			  BSP_LED_On(LED2);
+			  BSP_LED_Off(LED3);
+			  HAL_Delay(Delay_Led);
+			  break;
+		  }
+
+      }
+	  /* USER CODE BEGIN 3 */
   }
   /* USER CODE END 3 */
 }

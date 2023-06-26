@@ -89,27 +89,7 @@ void BSP_PB_Init(Button_TypeDef Button, ButtonMode_TypeDef ButtonMode)
   }
 }
 
-/**
-  * @brief  Push Button DeInit.
-  * @param  Button: Button to be configured
-  *   This parameter should be: BUTTON_USER
-  * @note PB DeInit does not disable the GPIO clock
-  */
-void BSP_PB_DeInit(Button_TypeDef Button)
-{
-  GPIO_InitTypeDef gpio_init_structure;
 
-  gpio_init_structure.Pin = BUTTON_PIN[Button];
-  HAL_NVIC_DisableIRQ((IRQn_Type)(BUTTON_IRQn[Button]));
-  HAL_GPIO_DeInit(BUTTON_PORT[Button], gpio_init_structure.Pin);
-}
-
-/**
-  * @brief  Returns the selected Button state.
-  * @param  Button: Specifies the Button to be checked.
-  *   This parameter should be: BUTTON_USER
-  * @retval The Button GPIO pin value.
-  */
 uint32_t BSP_PB_GetState(Button_TypeDef Button)
 {
   return HAL_GPIO_ReadPin(BUTTON_PORT[Button], BUTTON_PIN[Button]);
