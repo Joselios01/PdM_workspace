@@ -32,7 +32,6 @@
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
 #define	Delay_Led				50  //frecuencia base para leds
-#define	Delay_Refresh_Button	50  //frecuencia base para refresco led
 
 /* USER CODE END PD */
 
