@@ -31,7 +31,7 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-#define	Delay_Led				50  //frecuencia base para leds
+#define	Delay_Led				1000 //frecuencia base para leds
 #define	Delay_Refresh_Button	50  //frecuencia base para refresco led
 
 /* USER CODE END PD */
@@ -98,6 +98,9 @@ int main(void)
   while (1)
   {
     /* USER CODE END WHILE */
+
+
+
 	  BSP_LED_Toggle(LED1);
 	  HAL_Delay(Delay_Led);
 	  BSP_LED_Toggle(LED1);

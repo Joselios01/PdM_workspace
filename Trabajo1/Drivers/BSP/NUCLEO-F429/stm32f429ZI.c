@@ -37,7 +37,7 @@ void BSP_LED_Off(Led_TypeDef Led)
   HAL_GPIO_WritePin(GPIO_PORT[Led], GPIO_PIN[Led], GPIO_PIN_RESET);
 }
 
-
+// Invierte el estado actual de variable Led
 void BSP_LED_Toggle(Led_TypeDef Led)
 {
   HAL_GPIO_TogglePin(GPIO_PORT[Led], GPIO_PIN[Led]);
