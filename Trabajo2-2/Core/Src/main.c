@@ -50,9 +50,7 @@ void SysDelayWrite( delay_t * Time_Var, tick_t Duration);   // funcion para acti
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-#define		Delay_Led1				450 //frecuencia base para leds
-#define		Delay_Led2				500 //frecuencia base para leds
-#define		Delay_Led3				550 //frecuencia base para leds
+#define		Delay_Led				500 //frecuencia base para leds
 #define		MaxDuration				60000 //limite de conteo en 1 hora
 
 /* USER CODE END PD */
@@ -104,11 +102,7 @@ int main(void)
   BSP_PB_Init(BUTTON_USER, BUTTON_MODE_GPIO); //inicializa boton BSP en modo GPIO
 
   delay_t Timmer1;   						// variable tipo estructura delay_t
-  delay_t Timmer2;   						// variable tipo estructura delay_t
-  delay_t Timmer3;   						// variable tipo estructura delay_t
-  SysDelayInit( & Timmer1 , Delay_Led1 );	// Configura Timmer1
-  SysDelayInit( & Timmer2 , Delay_Led2 );	// Configura Timmer1
-  SysDelayInit( & Timmer3 , Delay_Led3 );	// Configura Timmer1
+  SysDelayInit( & Timmer1 , Delay_Led );	// Configura Timmer1
 
   /* USER CODE END Init */
 
@@ -132,15 +126,7 @@ int main(void)
     /* USER CODE END WHILE */
       if (SysDelayRead (&Timmer1))
 	  {
-	  BSP_LED_Toggle(LED1);
-	  }
-      if (SysDelayRead (&Timmer2))
-	  {
 	  BSP_LED_Toggle(LED2);
-	  }
-      if (SysDelayRead (&Timmer3))
-	  {
-	  BSP_LED_Toggle(LED3);
 	  }
   }
   /* USER CODE END 3 */
