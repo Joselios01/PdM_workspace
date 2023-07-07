@@ -1,4 +1,4 @@
-/* USER CODE BEGIN Header */
+//* USER CODE BEGIN Header */
 /**
   ******************************************************************************
   * @file           : main.c
@@ -50,7 +50,9 @@ void SysDelayWrite( delay_t * Time_Var, tick_t Duration);   // funcion para acti
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-#define		Delay_Led				500 //frecuencia base para leds
+#define		Delay_Led1				600 //frecuencia base para leds
+#define		Delay_Led2				200 //frecuencia base para leds
+#define		Delay_Led3				500 //frecuencia base para leds
 #define		MaxDuration				60000 //limite de conteo en 1 hora
 
 /* USER CODE END PD */
@@ -102,7 +104,11 @@ int main(void)
   BSP_PB_Init(BUTTON_USER, BUTTON_MODE_GPIO); //inicializa boton BSP en modo GPIO
 
   delay_t Timmer1;   						// variable tipo estructura delay_t
-  SysDelayInit( & Timmer1 , Delay_Led );	// Configura Timmer1
+  delay_t Timmer2;   						// variable tipo estructura delay_t
+  delay_t Timmer3;   						// variable tipo estructura delay_t
+  SysDelayInit( & Timmer1 , Delay_Led1 );	// Configura Timmer1
+  SysDelayInit( & Timmer2 , Delay_Led2 );	// Configura Timmer1
+  SysDelayInit( & Timmer3 , Delay_Led3 );	// Configura Timmer1
 
   /* USER CODE END Init */
 
@@ -126,7 +132,15 @@ int main(void)
     /* USER CODE END WHILE */
       if (SysDelayRead (&Timmer1))
 	  {
+	  BSP_LED_Toggle(LED1);
+	  }
+      if (SysDelayRead (&Timmer2))
+	  {
 	  BSP_LED_Toggle(LED2);
+	  }
+      if (SysDelayRead (&Timmer3))
+	  {
+	  BSP_LED_Toggle(LED3);
 	  }
   }
   /* USER CODE END 3 */
@@ -138,15 +152,18 @@ int main(void)
 //inicializa el temporizador.
 void SysDelayInit( delay_t * Time_Var, tick_t Duration)
 {
-    if(0 <= Duration && MaxDuration >= Duration ) // asegura que el timer no supere una hora.
-    {
-		Time_Var->Duration = Duration;
-		Time_Var->StartTime= HAL_GetTick();		// obtiene el valor para
-		Time_Var->Running  = true;		        // inicializa apagado...
-    }
+    if (Time_Var == NULL)
+    	Error_Handler();
     else
     {
-    	while(1);
+    	if(0 <= Duration && MaxDuration >= Duration ) // asegura que el timer no supere una hora.
+        {
+    		Time_Var->Duration = Duration;
+    		Time_Var->StartTime= HAL_GetTick();		// obtiene el valor para
+    		Time_Var->Running  = true;		        // inicializa apagado...
+        }
+        else
+        	Error_Handler();
     }
 	return;
 }
@@ -156,34 +173,42 @@ void SysDelayInit( delay_t * Time_Var, tick_t Duration)
 // true -> si completa el tiempo   false-> mientras espera
 bool_t SysDelayRead ( delay_t * Time_Var)
 {
-bool Respuesta;
-	if (Time_Var->Running)  // entra mientras este contando tiempos.
+bool Respuesta=false;
+	if (Time_Var != NULL)  // asegura que la variable Time_Var no este vacia.
 	{
-		if(HAL_GetTick() - Time_Var->StartTime >= Time_Var->Duration)
+		if (Time_Var->Running)  // entra mientras este contando tiempos.
 		{
-			Time_Var->Running = false;  //apaga despues de cumplir el tiempo.
-			Respuesta = true;
+			if(HAL_GetTick() - Time_Var->StartTime >= Time_Var->Duration)
+			{
+				Time_Var->Running = false;  //apaga despues de cumplir el tiempo.
+				Respuesta = true;
+			}
+			else
+			{
+				Respuesta = false;
+			}
 		}
-		else
+		else   // resetea el contador y lo reinicia, una vez sea consultado.
 		{
 			Respuesta = false;
+			Time_Var->StartTime = HAL_GetTick();
+			Time_Var->Running = true;
 		}
 	}
-	else   // resetea el contador y lo reinicia, una vez sea consultado.
-	{
-		Respuesta = false;
-		Time_Var->StartTime = HAL_GetTick();
-		Time_Var->Running = true;
-	}
-return (Respuesta);
+	return (Respuesta);
 }
 
 
 //Funcion para cambiar el temporizador
 void SysDelayWrite( delay_t * Time_Var, tick_t Duration)
 {
-    Time_Var->Duration = Duration;
+	if (Time_Var != NULL)  // asegura que la variable Time_Var no este vacia.
+	{
+		if(0 <= Duration && MaxDuration >= Duration ) // asegura que el timer no supere una hora.
+			Time_Var->Duration = Duration;
+	}
 	return;
+
 }
 
 
