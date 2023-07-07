@@ -18,10 +18,28 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
-#include "SysDelay.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+#include "stdbool.h"
+#include "stm32f4xx_hal.h"
+
+
+typedef uint32_t 	tick_t;  //AL_GetTick() devuelve un uint32_t, pero se define un tipo tick_t que solo manejara valores relacionados a tiempo.
+typedef bool 		bool_t;
+
+
+typedef struct {
+	tick_t		Duration;   //el tipo tick_t es un uint32_t
+	tick_t  	StartTime;  // usar un typedef para estas variables facilita la definicion de variables en las funciones
+    bool_t      Running;    // el mismo caso para la variable bool.
+}delay_t;
+
+
+
+void SysDelayInit( delay_t * Time_Var, tick_t Duration); //inicializa el contador pero no arranca
+bool_t SysDelayRead ( delay_t * Time_Var);
+void SysDelayWrite( delay_t * Time_Var, tick_t Duration);   // funcion para activar/desativar AutoStart;
 
 /* USER CODE END Includes */
 
@@ -32,8 +50,8 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-#define	Delay_Led				100 //frecuencia base para leds
-#define	Delay_Rebote_Button	500  //frecuencia base para refresco led
+#define		Delay_Led				500 //frecuencia base para leds
+#define		MaxDuration				60000 //limite de conteo en 1 hora
 
 /* USER CODE END PD */
 
@@ -82,10 +100,9 @@ int main(void)
   BSP_LED_Init(LED2);  // BSP -> Board Support Package
   BSP_LED_Init(LED3);
   BSP_PB_Init(BUTTON_USER, BUTTON_MODE_GPIO); //inicializa boton BSP en modo GPIO
-  delay_t Timmer1;   // variable tipo estructura delat_t
 
-  SysDelayInit( & Timmer1 , Delay_Led );
-  bool_t Answ;
+  delay_t Timmer1;   						// variable tipo estructura delay_t
+  SysDelayInit( & Timmer1 , Delay_Led );	// Configura Timmer1
 
   /* USER CODE END Init */
 
@@ -98,19 +115,16 @@ int main(void)
 
   /* Initialize all configured peripherals */
   /* USER CODE BEGIN 2 */
-  State = 0; //variable que selecciona el estado a mostrar 0=nada, 1=izquierda, 2=derecha
 
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
-  SysDelayAutoStart(&Timmer1, false);
 
   while (1)
   {
     /* USER CODE END WHILE */
-      Answ = SysDelayRead (&Timmer1);
-      if (Answ)
+      if (SysDelayRead (&Timmer1))
 	  {
 	  BSP_LED_Toggle(LED2);
 	  }
@@ -118,10 +132,61 @@ int main(void)
   /* USER CODE END 3 */
 }
 
-/**
-  * @brief System Clock Configuration
-  * @retval None
-  */
+
+
+
+//inicializa el temporizador.
+void SysDelayInit( delay_t * Time_Var, tick_t Duration)
+{
+    if(0 <= Duration && MaxDuration >= Duration ) // asegura que el timer no supere una hora.
+    {
+		Time_Var->Duration = Duration;
+		Time_Var->StartTime= HAL_GetTick();		// obtiene el valor para
+		Time_Var->Running  = true;		        // inicializa apagado...
+    }
+    else
+    {
+    	while(1);
+    }
+	return;
+}
+
+//Funcion que pregunta si completo el tiempo
+// si completa el tiempo y se pregunta por su estado se recarga y vuelve a iniciar.
+// true -> si completa el tiempo   false-> mientras espera
+bool_t SysDelayRead ( delay_t * Time_Var)
+{
+bool Respuesta;
+	if (Time_Var->Running)  // entra mientras este contando tiempos.
+	{
+		if(HAL_GetTick() - Time_Var->StartTime >= Time_Var->Duration)
+		{
+			Time_Var->Running = false;  //apaga despues de cumplir el tiempo.
+			Respuesta = true;
+		}
+		else
+		{
+			Respuesta = false;
+		}
+	}
+	else   // resetea el contador y lo reinicia, una vez sea consultado.
+	{
+		Respuesta = false;
+		Time_Var->StartTime = HAL_GetTick();
+		Time_Var->Running = true;
+	}
+return (Respuesta);
+}
+
+
+//Funcion para cambiar el temporizador
+void SysDelayWrite( delay_t * Time_Var, tick_t Duration)
+{
+    Time_Var->Duration = Duration;
+	return;
+}
+
+
 void SystemClock_Config(void)
 {
   RCC_OscInitTypeDef RCC_OscInitStruct = {0};
