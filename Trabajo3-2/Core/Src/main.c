@@ -31,9 +31,10 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-#define		Delay_Led1				50 //frecuencia base para leds
-#define		Delay_Led2				75 //frecuencia base para leds
-#define		Delay_Led3				100 //frecuencia base para leds
+#define		Delay_1				500 //frecuencia base para leds
+#define		Delay_2				500 //frecuencia base para leds
+#define		Delay_3				500//frecuencia base para leds
+#define     Num_Led_Secuencia		3  // secuencia de 3 LEDS
 
 /* USER CODE END PD */
 
@@ -69,6 +70,8 @@ void SystemClock_Config(void);
 int main(void)
 {
   /* USER CODE BEGIN 1 */
+  Led_TypeDef Secuencia_Led[Num_Led_Secuencia]={LED3,LED2,LED1};// secuencia de inicializacion
+  tick_t      Secuencia_Time[Num_Led_Secuencia]={Delay_1,Delay_2,Delay_3}; // inicializacion de tiempo
 
   /* USER CODE END 1 */
 
@@ -83,12 +86,10 @@ int main(void)
   BSP_LED_Init(LED3);
   BSP_PB_Init(BUTTON_USER, BUTTON_MODE_GPIO); //inicializa boton BSP en modo GPIO
 
-  delay_t Timmer1;   						// variable tipo estructura delay_t
-  delay_t Timmer2;   						// variable tipo estructura delay_t
-  delay_t Timmer3;   						// variable tipo estructura delay_t
-  SysDelayInit( & Timmer1 , Delay_Led1 );	// Configura Timmer1
-  SysDelayInit( & Timmer2 , Delay_Led2 );	// Configura Timmer1
-  SysDelayInit( & Timmer3 , Delay_Led3 );	// Configura Timmer1
+  delay_t Timmer[Num_Led_Secuencia];   	// variable vectores de tipo estructura delay_t
+
+  for (uint8_t  i = 0 ; Num_Led_Secuencia > i ; i++)  //inicializacion de Num_Led_Secuencia (3)
+     SysDelayInit( & Timmer[i] , Secuencia_Time[i] );	// Setea con la variable Secuencia_Time
 
   /* USER CODE END Init */
 
@@ -101,7 +102,7 @@ int main(void)
 
   /* Initialize all configured peripherals */
   /* USER CODE BEGIN 2 */
-
+  uint8_t i=0;
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -110,18 +111,20 @@ int main(void)
   while (1)
   {
     /* USER CODE END WHILE */
-      if (SysDelayRead (&Timmer1))
-	  {
-	  BSP_LED_Toggle(LED1);
-	  }
-      if (SysDelayRead (&Timmer2))
-	  {
-	  BSP_LED_Toggle(LED2);
-	  }
-      if (SysDelayRead (&Timmer3))
-	  {
-	  BSP_LED_Toggle(LED3);
-	  }
+
+
+	  	  //esta rutina hace el cambio de frecuencia y led de forma no bloqueante.
+
+		  BSP_LED_On(Secuencia_Led[i]);   //enciende led que espera a apagar
+    	  if (SysDelayRead (& Timmer[i] ))  // confirma tiempo led activo
+        	  {
+    		  BSP_LED_Off(Secuencia_Led[i]);	//al completar tiempo apaga para apuntar al siguiente
+              if (Num_Led_Secuencia == i+1)
+            	  i=0;			// si sobre pasa apuntador lo resetea para apuntar a 0 nuevamente
+              else
+            	  i++;
+              SysDelayInit( & Timmer[i] , Secuencia_Time[i] );	// Captura valor actual de Systick para iniciar tiempo
+        	  }
   }
   /* USER CODE END 3 */
 }

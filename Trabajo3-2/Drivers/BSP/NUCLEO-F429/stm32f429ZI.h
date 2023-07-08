@@ -39,8 +39,6 @@ typedef enum
 
 
 
-
-
 #define LEDn                                    3
 
 #define LED1_PIN                                GPIO_PIN_0
