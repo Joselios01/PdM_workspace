@@ -30,6 +30,7 @@ extern "C" {
 #include "stm32f4xx_hal.h"
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+#include "API_delay.h"
 #include "stm32f429ZI.h"
 /* USER CODE END Includes */
 

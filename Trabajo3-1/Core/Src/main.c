@@ -21,25 +21,6 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-#include "stdbool.h"
-#include "stm32f4xx_hal.h"
-
-
-typedef uint32_t 	tick_t;  //AL_GetTick() devuelve un uint32_t, pero se define un tipo tick_t que solo manejara valores relacionados a tiempo.
-typedef bool 		bool_t;
-
-
-typedef struct {
-	tick_t		Duration;   //el tipo tick_t es un uint32_t
-	tick_t  	StartTime;  // usar un typedef para estas variables facilita la definicion de variables en las funciones
-    bool_t      Running;    // el mismo caso para la variable bool.
-}delay_t;
-
-
-
-void SysDelayInit( delay_t * Time_Var, tick_t Duration); //inicializa el contador pero no arranca
-bool_t SysDelayRead ( delay_t * Time_Var);
-void SysDelayWrite( delay_t * Time_Var, tick_t Duration);   // funcion para activar/desativar AutoStart;
 
 /* USER CODE END Includes */
 
@@ -50,10 +31,9 @@ void SysDelayWrite( delay_t * Time_Var, tick_t Duration);   // funcion para acti
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-#define		Delay_Led1				600 //frecuencia base para leds
-#define		Delay_Led2				200 //frecuencia base para leds
-#define		Delay_Led3				500 //frecuencia base para leds
-#define		MaxDuration				60000 //limite de conteo en 1 hora
+#define		Delay_Led1				50 //frecuencia base para leds
+#define		Delay_Led2				75 //frecuencia base para leds
+#define		Delay_Led3				100 //frecuencia base para leds
 
 /* USER CODE END PD */
 
@@ -147,69 +127,6 @@ int main(void)
 }
 
 
-
-
-//inicializa el temporizador.
-void SysDelayInit( delay_t * Time_Var, tick_t Duration)
-{
-    if (Time_Var == NULL)
-    	Error_Handler();
-    else
-    {
-    	if(0 <= Duration && MaxDuration >= Duration ) // asegura que el timer no supere una hora.
-        {
-    		Time_Var->Duration = Duration;
-    		Time_Var->StartTime= HAL_GetTick();		// obtiene el valor para
-    		Time_Var->Running  = true;		        // inicializa apagado...
-        }
-        else
-        	Error_Handler();
-    }
-	return;
-}
-
-//Funcion que pregunta si completo el tiempo
-// si completa el tiempo y se pregunta por su estado se recarga y vuelve a iniciar.
-// true -> si completa el tiempo   false-> mientras espera
-bool_t SysDelayRead ( delay_t * Time_Var)
-{
-bool Respuesta=false;
-	if (Time_Var != NULL)  // asegura que la variable Time_Var no este vacia.
-	{
-		if (Time_Var->Running)  // entra mientras este contando tiempos.
-		{
-			if(HAL_GetTick() - Time_Var->StartTime >= Time_Var->Duration)
-			{
-				Time_Var->Running = false;  //apaga despues de cumplir el tiempo.
-				Respuesta = true;
-			}
-			else
-			{
-				Respuesta = false;
-			}
-		}
-		else   // resetea el contador y lo reinicia, una vez sea consultado.
-		{
-			Respuesta = false;
-			Time_Var->StartTime = HAL_GetTick();
-			Time_Var->Running = true;
-		}
-	}
-	return (Respuesta);
-}
-
-
-//Funcion para cambiar el temporizador
-void SysDelayWrite( delay_t * Time_Var, tick_t Duration)
-{
-	if (Time_Var != NULL)  // asegura que la variable Time_Var no este vacia.
-	{
-		if(0 <= Duration && MaxDuration >= Duration ) // asegura que el timer no supere una hora.
-			Time_Var->Duration = Duration;
-	}
-	return;
-
-}
 
 
 void SystemClock_Config(void)
