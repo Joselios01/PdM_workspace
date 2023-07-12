@@ -134,7 +134,7 @@ int main(void)
 
 	  switch (State )
 	  {
-		  case 0 :
+		  case 0 : // detecta la pulsacion y activa temporizador
 			  if (BSP_PB_GetState(BUTTON_USER))
 			  {
 				  State++;
@@ -142,21 +142,22 @@ int main(void)
 			  }
 			  break;
 
-		  case 1 :
+		  case 1 : // espera un tiempo y pregunta boton
 
 			  if (SysDelayRead(& Timmer_Rebote))
 			  {
 				  if(BSP_PB_GetState(BUTTON_USER))
-					  State++;
+					  State++;  // si se mantiene entra a cambiar secuncia
 				  else
-					  State--;
+					  State--;	// ruido detectado, resetea a esperar pulsacion
 			  }
 			  break;
 
-		  case 2:
+		  case 2: // se mueve dentro de 5 posibles secuencias.
 
 			  if (Secuencias== 5)
 				  Secuencias=0;   //resetea y obliga a realizar secuencia 0
+
 			  if (Secuencias== 4)
 			  {
 				  Secuencias++;
