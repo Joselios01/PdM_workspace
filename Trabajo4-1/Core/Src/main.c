@@ -142,9 +142,12 @@ int main(void)
   {
     /* USER CODE END WHILE */
 
+	  //el led que hace Blink de 40ms, durante la ejecucion de la MEF ideantifica que no se genera ninguna
+	  //demora o salto de secuencia sobre el LED, independiente del Boton.
+	  // buen ejemplo apra identificar los retardos no bloqueantes y el anti-rebote
+	  // Buen dato relacionado a que modularizando el codigo se hace mas simple en MAIN.
+
 	  ButtonMEF_update();  // pregunta el button y actualiza estado de flancos
-
-
 
 	  if (SysDelayRead(& Timmer_Leds))  //adicional a lo solicitado, solo parpadea un led.
 		  BSP_LED_Toggle(LED2);
