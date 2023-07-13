@@ -1,20 +1,32 @@
 ///* USER CODE BEGIN Header */
 /**
-  ******************************************************************************
-  * @file           : main.c
-  * @brief          : Main program body
-  ******************************************************************************
-  * @attention
-  *
-  * Copyright (c) 2023 STMicroelectronics.
-  * All rights reserved.
-  *
-  * This software is licensed under terms that can be found in the LICENSE file
-  * in the root directory of this software component.
-  * If no LICENSE file comes with this software, it is provided AS-IS.
-  *
-  ******************************************************************************
+                    *******************************************************
+                    *******************************************************
+                    *******************************************************
+       ETH_REF_CLK--** PA 1 **                                   ** PB 0 **-- LED1[GREEN]
+          ETH_MDIO--** PA 2 **        PLACA NUCLEO-F429ZI        ** PB 7 **-- LED2[BLUE]
+        ETH_CRS_DV--** PA 7 **     PINES USADOS POR LA PLACA     ** PB14 **-- LED3[RED]
+         ETH_TX_EN--** PB11 **                                   **********
+          ETH_TXD0--** PB12 **                                   ** PC13 **-- USER_BUTTON
+          ETH_TXD1--** PB13 **                                   *********
+           ETH_MDC--** PC 1 **                                   ** PD 8 **-- UART3_RX
+          ETH_RXD0--** PC 4 **                                   ** PD 9 **-- UART3_TX
+          ETH_RXD1--** PC 5 **                                   **********
+                    *******************************************************
+                    **********                                   **********
+        DS1307_SCL--** PB 8 **     USADOS POR LA APLICACION      ** PA15 **-- SD_SPI1_CS
+        DS1307_SDA--** PB 9 **                                   ** PB 3 **-- SD_SPI1_SCK
+                    **********                                   ** PB 5 **-- SD_SPI1_MOSI
+                    **********                                   ** PA 6 **-- SD_SPI1_MISO
+                    **********                                   **********
+                    **********                                   **********
+                    **********                                   **********
+                    *******************************************************
+                    *******************************************************
+                    *******************************************************.
+
   */
+
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
@@ -41,7 +53,7 @@ typedef enum{
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-#define		Delay_1				500 //frecuencia base para leds
+#define		Delay_1				40 //frecuencia base para leds
 #define		Delay_2				500 //frecuencia base para leds
 #define		Delay_3				500//frecuencia base para leds
 #define		Delay_Rebote		100//frecuencia base para leds
@@ -61,7 +73,6 @@ typedef enum{
 
 
 /* USER CODE BEGIN PV */
-uint8_t State;
 
 typedef uint32_t tick_t;
 
@@ -70,18 +81,19 @@ typedef uint32_t tick_t;
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 /* USER CODE BEGIN PFP */
-void ButtonMEF_init();		// inicializa
-void ButtonMEF_update();	// debe leer las entradas, resolver la lógica de
-					// transición de estados y actualizar las salidas
-void UsrBtn_Pressed();			// debe invertir el estado del LED1
-void UsrBtn_Released();		// debe invertir el estado del LED3
+void ButtonMEF_init();		// inicializa MEF y resetea Flanco_press y Flanco_release
+void ButtonMEF_update();	// lee puerto, actualiza MEF y las salidas son dos banderas Flanco_press y Flanco_release
+bool_t UsrBtn_Pressed();			// la funcion devuelve estado del flag Flanco_press
+bool_t UsrBtn_Released();		    // la funcion devuelve estado del flag Flanco_release
 
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
 
-delay_t Timmer_UsrBtn;   	// variable publica para ser vista desde las funciones
+delay_t Timmer_UsrBtn;   	         // variable tipo timer publica para ser vista desde las funciones
+buttonMEF_t EstadoActual;            // MEF-Apuntador
+bool_t  Flanco_press, Flanco_release;// Banderas para mirar el estado de los eventos.
 
 /* USER CODE END 0 */
 
@@ -92,8 +104,6 @@ delay_t Timmer_UsrBtn;   	// variable publica para ser vista desde las funciones
 int main(void)
 {
   /* USER CODE BEGIN 1 */
-  Led_TypeDef Orden_Led[Num_Leds]={LED3,LED2,LED1};// secuencia de inicializacion
-  tick_t      Orden_Time[Num_Leds]={Delay_1,Delay_2,Delay_3}; // inicializacion de tiempo
 
   /* USER CODE END 1 */
 
@@ -108,12 +118,8 @@ int main(void)
   BSP_LED_Init(LED3);
   BSP_PB_Init(BUTTON_USER, BUTTON_MODE_GPIO); //inicializa boton BSP en modo GPIO
 
-  delay_t Timmer[Num_Leds];   	// variable vectores de tipo estructura delay_t
-
-  buttonMEF_t EstadoActual;
-
-  for (uint8_t  i = 0 ; Num_Leds > i ; i++)  //inicializacion de Num_Led_Secuencia (3)
-     SysDelayInit( & Timmer[i] , Orden_Time[i] );	// Setea con la variable Secuencia_Time
+  delay_t Timmer_Leds;   	// variable de tipo estructura delay_t
+  SysDelayInit( & Timmer_Leds , Delay_1 );	// inicializa el timmer para el led-blink
 
   /* USER CODE END Init */
 
@@ -126,10 +132,7 @@ int main(void)
 
   /* Initialize all configured peripherals */
   /* USER CODE BEGIN 2 */
-  uint8_t i=0;
-  uint8_t Secuencias=0;
-  State =0;
-
+   ButtonMEF_init();
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -139,85 +142,18 @@ int main(void)
   {
     /* USER CODE END WHILE */
 
-
-	  	  //esta rutina hace el cambio de frecuencia y led de forma no bloqueante.
-
-	  BSP_LED_On(Orden_Led[i]);   //enciende led que espera a apagar
-	  if (SysDelayRead (& Timmer[i] ))  // confirma tiempo led activo
-		  {
-		  BSP_LED_Off(Orden_Led[i]);	//al completar tiempo apaga para apuntar al siguiente
-		  if (Num_Leds == i+1)
-			  i=0;			// si sobre pasa apuntador lo resetea para apuntar a 0 nuevamente
-		  else
-			  i++;
-		  SysDelayInit( & Timmer[i] , Orden_Time[i] );	// Captura valor actual de Systick para iniciar tiempo
-		  }
-
-
-	  switch (State )
-	  {
-		  case 1 : // espera un tiempo y pregunta boton
-
-
-		  case 2: // se mueve dentro de 5 posibles secuencias.
-
-			  if (Secuencias== 5)
-				  Secuencias=0;   //resetea y obliga a realizar secuencia 0
-
-			  if (Secuencias== 4)
-			  {
-				  Secuencias++;
-			  	  Orden_Led[0]=LED2;
-			  	  Orden_Led[1]=LED2;
-			  	  Orden_Led[2]=LED3;
-			  }
-			  if (Secuencias== 3)
-			  {
-				  Secuencias++;
-			  	  Orden_Led[0]=LED1;
-			  	  Orden_Led[1]=LED3;
-			  	  Orden_Led[2]=LED3;
-			  }
-			  if (Secuencias== 2)
-			  {
-				  Secuencias++;
-			  	  Orden_Led[0]=LED1;
-			  	  Orden_Led[1]=LED2;
-			  	  Orden_Led[2]=LED2;
-			  }
-			  if (Secuencias== 1)
-			  {
-				  Secuencias++;
-			  	  Orden_Led[0]=LED3;
-			  	  Orden_Led[1]=LED2;
-			  	  Orden_Led[2]=LED1;
-			  }
-			  if (Secuencias== 0)
-			  {
-				  Secuencias++;
-			  	  Orden_Led[0]=LED1;
-			  	  Orden_Led[1]=LED2;
-			  	  Orden_Led[2]=LED3;
-			  }
-			  State++;
-			  break;
-
-		  case 3:
-
-			  if (!BSP_PB_GetState(BUTTON_USER))
-			  {
-				  State=0;
-			  }
-			  break;
-
-		  default :
-
-			  break;
-
-	  }
+	  ButtonMEF_update();  // pregunta el button y actualiza estado de flancos
 
 
 
+	  if (SysDelayRead(& Timmer_Leds))  //adicional a lo solicitado, solo parpadea un led.
+		  BSP_LED_Toggle(LED2);
+
+	  if (UsrBtn_Pressed())   // pregunta por un evento de presion de boton
+		  BSP_LED_Toggle(LED1);
+
+	  if (UsrBtn_Released())  // pregunta por un evento de soltado de boton
+		  BSP_LED_Toggle(LED3);
 
 
   }
@@ -229,6 +165,8 @@ int main(void)
 void ButtonMEF_init()
 {
 	EstadoActual = BUTTON_UP;
+	Flanco_press = false;
+	Flanco_release = false;
 }
 
 void ButtonMEF_update()
@@ -237,8 +175,7 @@ void ButtonMEF_update()
 	{
 		case BUTTON_UP :
 		{
-
-			if (BSP_PB_GetState(BUTTON_USER))
+			if (BSP_PB_GetState(BUTTON_USER))   //identifica que el boton se presiono, activa delay
 			{
 				EstadoActual = BUTTON_FALLING;
 				SysDelayInit( & Timmer_UsrBtn, Time_Debounce_UsrBtn );
@@ -247,31 +184,70 @@ void ButtonMEF_update()
 		}
 		case BUTTON_FALLING :
 		{
-			  if (SysDelayRead(& Timmer_))
+			  if (SysDelayRead(& Timmer_UsrBtn))
 			  {
-				  if(BSP_PB_GetState(BUTTON_USER))
-					  State++;  // si se mantiene entra a cambiar secuncia
+				  if(BSP_PB_GetState(BUTTON_USER))  // al finalizar retardo re-confirma que el boton fue presionado
+				  {
+					  EstadoActual = BUTTON_DOWN;  // si se mantiene activa varible Flanco_press
+					  Flanco_press= true;
+				  }
 				  else
-					  State--;	// ruido detectado, resetea a esperar pulsacion
+					  EstadoActual = BUTTON_UP;	// ruido detectado, resetea a esperar pulsacion
 			  }
 			  break;
 
 		}
 		case BUTTON_DOWN :
 		{
+			if (!BSP_PB_GetState(BUTTON_USER))   // boton esperando que sea soltado
+			{
+				EstadoActual = BUTTON_RAISING;           // al soltar inicia contador para eliminar falso positivo
+				SysDelayInit( & Timmer_UsrBtn, Time_Debounce_UsrBtn );
+			}
+			break;
 
 		}
 		case BUTTON_RAISING :
 		{
-
+			  if (SysDelayRead(& Timmer_UsrBtn))
+			  {
+				  if(!BSP_PB_GetState(BUTTON_USER))   //despues de retardo re-confirma boton suelto
+				  {
+					  EstadoActual = BUTTON_UP;  // si se mantiene suelto a activa Flanco_release
+					  Flanco_release= true;
+				  }
+				  else
+					  EstadoActual = BUTTON_DOWN;	// ruido detectado, resetea a esperar soltado
+			  }
+			  break;
 		}
 		default :
-
-
+			EstadoActual = BUTTON_UP;   // asegura que va a caer en el primer estado que inicia MEF
+		break;
 	}
 
 }
 
+
+bool_t UsrBtn_Pressed()			// para no escribir sobre el puerto en la funcion esta pregunta por el flanco
+{
+bool_t resp=false;
+if (Flanco_press)
+	resp= true;
+Flanco_press = false;
+return resp;					// y devuelve el valor, al mismo tiempo que lo resetea para siguiente lectura.
+}
+
+
+bool_t UsrBtn_Released()		// para no escribir sobre el puerto en la funcion esta pregunta por el flanco
+{
+	bool_t resp=false;
+	if (Flanco_release)
+		resp= true;
+	Flanco_release = false;
+	return resp;				// y devuelve el valor, al mismo tiempo que lo resetea para siguiente lectura.
+
+}
 
 void SystemClock_Config(void)
 {
