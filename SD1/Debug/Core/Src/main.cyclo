@@ -1,0 +1,9 @@
+main.c:80:5:main	3
+main.c:158:6:Send_uart	1
+main.c:166:9:MemSD_Init	2
+main.c:211:9:MemSD_list_dir	5
+main.c:260:6:SystemClock_Config	3
+main.c:306:13:MX_SPI1_Init	2
+main.c:344:13:MX_USART3_UART_Init	2
+main.c:377:13:MX_GPIO_Init	1
+main.c:445:6:Error_Handler	1
