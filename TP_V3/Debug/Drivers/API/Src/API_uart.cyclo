@@ -1,7 +1,0 @@
-API_uart.c:24:6:uartInit	2
-API_uart.c:90:6:uartTX_CMD_Home	1
-API_uart.c:96:6:uartTX_CMD_Enter	1
-API_uart.c:103:6:uartSendString	1
-API_uart.c:111:6:uartSendStringSize	1
-API_uart.c:124:6:uartReceiveStringSize	1
-API_uart.c:134:6:Uart_Error	1

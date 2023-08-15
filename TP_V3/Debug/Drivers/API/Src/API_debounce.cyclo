@@ -1,5 +1,0 @@
-API_debounce.c:43:6:ButtonMEF_init	1
-API_debounce.c:52:6:ButtonMEF_update	11
-API_debounce.c:113:8:UsrBtn_ReadKey	2
-API_debounce.c:125:8:UsrBtn_Pressed	2
-API_debounce.c:136:8:UsrBtn_Released	2

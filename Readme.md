@@ -44,6 +44,7 @@ sobre la carpeta, luego abrirlo en STM32CubeIDE.
                     
                     
 Proyectos relevantes:
+funcionando
 
 Trabajo 3-2 Uso de retardos no bloqueantes independientes Systick
 Trabajo 4-2 Boton con retarno no bloqueante
