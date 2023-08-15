@@ -1,0 +1,5 @@
+LCD04x16.c:41:6:LCD04x16_init	1
+LCD04x16.c:74:6:lcd_send_cmd4bits	1
+LCD04x16.c:89:6:LCD04x16_TxCmd	1
+LCD04x16.c:121:6:LCD04x16_TxChar	1
+LCD04x16.c:151:6:lcd_BackLigth	1
