@@ -30,7 +30,7 @@ extern "C" {
 #include "stm32f4xx_hal.h"
 #include "DS1307.h"
 #include "LCD04x16.h"
-#include "API_Uart.h"
+#include "API_uart.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */

@@ -25,95 +25,47 @@
 #include "string.h"
 
 /* Private includes ----------------------------------------------------------*/
-/* USER CODE BEGIN Includes */
-
-/* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
-/* USER CODE BEGIN PTD */
-
-/* USER CODE END PTD */
 
 /* Private define ------------------------------------------------------------*/
-/* USER CODE BEGIN PD */
-
-/* USER CODE END PD */
-
-/* Private macro -------------------------------------------------------------*/
-/* USER CODE BEGIN PM */
-
-/* USER CODE END PM */
 
 /* Private variables ---------------------------------------------------------*/
 #define len_DateTime     6  //longitud de Fecha y Hora
 
-/* USER CODE BEGIN PV */
-
-
-
-
-
-
-/* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
+
 static void MX_GPIO_Init(void);
-/* USER CODE BEGIN PFP */
+
+
 void send_LCD_Date (char date[len_DateTime]);
 void send_LCD_Time (char date[len_DateTime]);
 
 
-
-
-
-/* USER CODE END PFP */
-
 /* Private user code ---------------------------------------------------------*/
-/* USER CODE BEGIN 0 */
 
-/* USER CODE END 0 */
 
-/**
-  * @brief  The application entry point.
-  * @retval int
-  */
 int main(void)
 {
-  /* USER CODE BEGIN 1 */
+  /* Inicializacion de la HAL*/
 
-  /* USER CODE END 1 */
-
-  /* MCU Configuration--------------------------------------------------------*/
-
-  /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
   HAL_Init();
+  /* Configure the system clock */
   SystemClock_Config();
+  /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
   MX_GPIO_Init();
 
-  /* USER CODE BEGIN Init */
-
-  /* USER CODE END Init */
-
-  /* Configure the system clock */
-
-  /* USER CODE BEGIN SysInit */
-
-  /* USER CODE END SysInit */
 
   /* Initialize all configured peripherals */
-
-
-
-
-  /* USER CODE BEGIN 2 */
-  HAL_Delay(4000);
+  HAL_Delay(4000); // tiempo usado para que la pantalla encienda
+  	  	  	  	   // la pantalla requiere mas seteo-fino
   uartInit();
   DS1307_Init();
   LCD04x16_init();
-//  lcd_init();
 
-  /* USER CODE END 2 */
+  /*inicializacion de variables*/
 
   // se inicializa a la fuerza con una fecha y hora que en poco tiempo
   // genere un cambio en el dis mes y año.
@@ -121,12 +73,14 @@ int main(void)
 
 
 // crea variabele vector con el dato "235840"
-char Hora1[]="235910";  // Hora y fecha de inicializacion
-char Fecha1[]="311223"; // esta es la fecha y hora que se coloca en el reloj
+char Hora1[]="235910";
+char Fecha1[]="311223";
+
 // crea un puntero que siempre mira solo el primer valor 0 del vector
 char *ptrDate=Fecha1;
 char *ptrTime=Hora1;
-
+char var_date[6];
+char var_time[6];
 
 if ( API_OK != DS1307_SetDate(ptrDate))
 	Error_Handler();
@@ -134,42 +88,43 @@ if ( API_OK != DS1307_SetDate(ptrDate))
 if ( API_OK != DS1307_SetTime(ptrTime))
 		Error_Handler();
 
-HAL_Delay(10);
-
-
-
-char var_date[6];
-char var_time[6];
 
 
 
 
-  /* USER CODE BEGIN WHILE */
+
+
+
+
   while (1)
   {
-    /* USER CODE END WHILE */
-
-
       // falta agregar la solucion para la MEF
-	  // que temporizara la entrada a cada periferico
+	  // que temporizará la entrada a cada periferico
 
-	  DS1307_GetDate(var_date);
-	  DS1307_GetTime(var_time);
+	  DS1307_GetDate(var_date);  //obtiene la fecha (6Bytes)
+	  DS1307_GetTime(var_time);  //obtiene la Hora  (6Bytes)
 
-	  send_LCD_Date(var_date);
-	  send_LCD_Time(var_time);
+	  send_LCD_Date(var_date);   //Escribe LCD fecha
+	  	  	  	  	  	  	  	 //agregando separadores "/"
+	  send_LCD_Time(var_time);   //Escribe LCD hora
+	  	  	  	  	  	  	  	 //agregando separadores ":"
 
       uartSendStringSize(var_date, len_DateTime);
+      //envia al PC la fecha en (6Bytes) data reducida
       uartSendStringSize(var_time, len_DateTime);
-      uartTX_CMD_Home();
+      //envia al PC la fecha en (6Bytes) data reducida
+      //el objetivo es escribir en una SD con ese formato
+      //y extender la cantidad de valores de sensores que podria
+      //almacenar (con este formato reducido de FECHAyHORA.
+      //en una memoria de 4G, me daria para 5 meses. necesito llegar al año.
+      uartTX_CMD_Home();   //solo para presentacion visual en PC.
 
-      HAL_Delay(500);
+      HAL_Delay(500);   // eliminarlo para que no sea bloqueante el ciclo.
+      	  	  	  	  	// insertar led de parpadeo indicando funcionamiento
 
-    /* USER CODE BEGIN 3 */
   }
-  /* USER CODE END 3 */
 }
-
+//coloca en pantalla la FECHA agregando "dd/mm/yy"
 
 void send_LCD_Date (char date[len_DateTime])
 {
@@ -184,6 +139,8 @@ void send_LCD_Date (char date[len_DateTime])
 	  LCD04x16_TxChar('_');    //0x5f carater _
 }
 
+
+//coloca en pantalla la HORA agregando 'hh:mm:ss'
 void send_LCD_Time (char time[len_DateTime])
 {
 	  LCD04x16_TxChar(time[0]);
@@ -197,9 +154,7 @@ void send_LCD_Time (char time[len_DateTime])
 	  LCD04x16_TxCmd(0x80);    // direccion de pantalla esquina izquierda
 }
 
-/**
-  * @brief System Clock Configuration
-  */
+
 void SystemClock_Config(void)
 {
   RCC_OscInitTypeDef RCC_OscInitStruct = {0};
@@ -233,13 +188,8 @@ void SystemClock_Config(void)
 }
 
 
-
-
-/**
-  * @brief GPIO Initialization Function
-  * @param None
-  * @retval None
-  */
+//No se utiliza el configurador de GPIO,
+//cada driver configura sus puertos.
 static void MX_GPIO_Init(void)
 {
   GPIO_InitTypeDef GPIO_InitStruct = {0};
@@ -336,10 +286,8 @@ static void MX_GPIO_Init(void)
 /* USER CODE END MX_GPIO_Init_2 */
 }
 
-/**
-  * @brief  This function is executed in case of error occurrence.
-  * @retval None
-  */
+
+// Bloquea el programa en caso de Error
 void Error_Handler(void)
 {
   /* USER CODE BEGIN Error_Handler_Debug */
@@ -367,3 +315,4 @@ void assert_failed(uint8_t *file, uint32_t line)
   /* USER CODE END 6 */
 }
 #endif /* USE_FULL_ASSERT */
+
