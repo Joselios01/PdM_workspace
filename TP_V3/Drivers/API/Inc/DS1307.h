@@ -20,8 +20,6 @@
 #define ascii_mask  0x30//length Bytes time
 
 /* Exported functions prototypes ---------------------------------------------*/
-
-
 /* Public defines ------------------------------------------------------------*/
 
 void DS1307_Init(void);

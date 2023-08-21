@@ -18,114 +18,105 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
-
-
 #include "stdbool.h"
 #include "stdint.h"
 #include "string.h"
 
-/* Private includes ----------------------------------------------------------*/
-
 /* Private typedef -----------------------------------------------------------*/
-
 /* Private define ------------------------------------------------------------*/
-
-/* Private variables ---------------------------------------------------------*/
 #define len_DateTime     6  //longitud de Fecha y Hora
+#define Parpadeo_ShowOn  100
 
+/* Private macro -------------------------------------------------------------*/
+/* Private variables ---------------------------------------------------------*/
 
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
-
 static void MX_GPIO_Init(void);
-
-
 void send_LCD_Date (char date[len_DateTime]);
 void send_LCD_Time (char date[len_DateTime]);
 
 
-/* Private user code ---------------------------------------------------------*/
-
-
+/**
+  * @brief  The application entry point.
+  * @retval int
+  */
 int main(void)
 {
-  /* Inicializacion de la HAL*/
-
+  /* MCU Configuration--------------------------------------------------------*/
   HAL_Init();
-  /* Configure the system clock */
   SystemClock_Config();
-  /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
   MX_GPIO_Init();
 
-
   /* Initialize all configured peripherals */
-  HAL_Delay(4000); // tiempo usado para que la pantalla encienda
-  	  	  	  	   // la pantalla requiere mas seteo-fino
-  uartInit();
-  DS1307_Init();
-  LCD04x16_init();
 
-  /*inicializacion de variables*/
+  HAL_Delay(4000);  //delay bloqueante, para encendido completo de LCD
+  uartInit();       //inicializacion Uart propia del STLINK-v2
+  DS1307_Init();    //Configuracion del I2C
+  LCD04x16_init();  //inicializacion y configuracion del Display (bus de 4bits)
+  StatesMEF_init(); //inicialzia la MEF y configura su reloj
 
-  // se inicializa a la fuerza con una fecha y hora que en poco tiempo
-  // genere un cambio en el dis mes y año.
-  // objetivo proximo, recibir este dato por uart.
-
+// se HARDCODEA a la fuerza con una fecha y hora.
+// el objetivo es que en poco tiempo haga cambio de todos los campos
+// en el dia, mes, año, Hora, minuto y segundos.
+// objetivo proximo, recibir este dato por uart.
 
 // crea variabele vector con el dato "235840"
-char Hora1[]="235910";
-char Fecha1[]="311223";
-
+char Hora1[]="235910";  // Hora y fecha de inicializacion
+char Fecha1[]="311223"; // esta es la fecha y hora que se coloca en el reloj
 // crea un puntero que siempre mira solo el primer valor 0 del vector
 char *ptrDate=Fecha1;
 char *ptrTime=Hora1;
+
 char var_date[6];
 char var_time[6];
 
-if ( API_OK != DS1307_SetDate(ptrDate))
+
+if ( API_OK != DS1307_SetDate(ptrDate))  // setea la fecha y bloquea en caso de error
 	Error_Handler();
 
-if ( API_OK != DS1307_SetTime(ptrTime))
+if ( API_OK != DS1307_SetTime(ptrTime))  // setea la Hora  y bloquea en caso de error
 		Error_Handler();
 
 
-
-
-
-
-
-
+delay_t Timmer_ShowOn;
+SysDelayInit( & Timmer_ShowOn,Parpadeo_ShowOn );
+BSP_LED_Init(LED_ON);
 
   while (1)
   {
-      // falta agregar la solucion para la MEF
-	  // que temporizará la entrada a cada periferico
+	 if (SysDelayRead(& Timmer_ShowOn))
+		  BSP_LED_Toggle(LED_ON);	//led parpadea indicando el refresco del main.
 
-	  DS1307_GetDate(var_date);  //obtiene la fecha (6Bytes)
-	  DS1307_GetTime(var_time);  //obtiene la Hora  (6Bytes)
 
-	  send_LCD_Date(var_date);   //Escribe LCD fecha
-	  	  	  	  	  	  	  	 //agregando separadores "/"
-	  send_LCD_Time(var_time);   //Escribe LCD hora
-	  	  	  	  	  	  	  	 //agregando separadores ":"
+	 StatesMEF_Refresh();    	//actuliza la MEF, en busqueda de cambios.
+     if (Read_Fecha())  // lee un flag dentro de la MEF que se resetea al leer.
+     {
+   	   DS1307_GetDate(var_date);
+   	   DS1307_GetTime(var_time);
+     }
 
-      uartSendStringSize(var_date, len_DateTime);
-      //envia al PC la fecha en (6Bytes) data reducida
-      uartSendStringSize(var_time, len_DateTime);
-      //envia al PC la fecha en (6Bytes) data reducida
-      //el objetivo es escribir en una SD con ese formato
-      //y extender la cantidad de valores de sensores que podria
-      //almacenar (con este formato reducido de FECHAyHORA.
-      //en una memoria de 4G, me daria para 5 meses. necesito llegar al año.
-      uartTX_CMD_Home();   //solo para presentacion visual en PC.
+     if (Send_Fecha())  // lee un flag dentro de la MEF que se resetea al leer.
+     {
+	   send_LCD_Date(var_date);
+	   send_LCD_Time(var_time);
+     }
 
-      HAL_Delay(500);   // eliminarlo para que no sea bloqueante el ciclo.
-      	  	  	  	  	// insertar led de parpadeo indicando funcionamiento
-
+     if (Print_Fecha())  // lee un flag dentro de la MEF que se resetea al leer.
+     {
+	   uartSendStringSize (var_date, len_DateTime);
+	   uartSendStringSize (var_time, len_DateTime);
+	   uartTX_CMD_Home();
+     }
   }
 }
-//coloca en pantalla la FECHA agregando "dd/mm/yy"
 
+
+/* Send_LCD_Date(variable con fecha en 6 caracteres);  ---------------------------------------------------*/
+// recibe   : puntero a char de 6 posiciones
+// devuelve : respuesta de Error en la escritura.
+// formato de date "DDMMYY"
+// No es una funcion Bloqueante
 void send_LCD_Date (char date[len_DateTime])
 {
 	  LCD04x16_TxChar(date[0]);
@@ -140,7 +131,11 @@ void send_LCD_Date (char date[len_DateTime])
 }
 
 
-//coloca en pantalla la HORA agregando 'hh:mm:ss'
+/* Send_LCD_Date(variable con HORA en 6 caracteres);  ---------------------------------------------------*/
+//  recibe   : puntero a char de 6 posiciones
+//  devuelve : respuesta de Error en la escritura.
+//  formato de date "HHMMSS"
+//  No es una funcion Bloqueante
 void send_LCD_Time (char time[len_DateTime])
 {
 	  LCD04x16_TxChar(time[0]);
@@ -154,7 +149,9 @@ void send_LCD_Time (char time[len_DateTime])
 	  LCD04x16_TxCmd(0x80);    // direccion de pantalla esquina izquierda
 }
 
-
+/**
+  * @brief System Clock Configuration
+  */
 void SystemClock_Config(void)
 {
   RCC_OscInitTypeDef RCC_OscInitStruct = {0};
@@ -188,8 +185,13 @@ void SystemClock_Config(void)
 }
 
 
-//No se utiliza el configurador de GPIO,
-//cada driver configura sus puertos.
+
+
+/**
+  * @brief GPIO Initialization Function
+  * @param None
+  * @retval None
+  */
 static void MX_GPIO_Init(void)
 {
   GPIO_InitTypeDef GPIO_InitStruct = {0};
@@ -286,8 +288,10 @@ static void MX_GPIO_Init(void)
 /* USER CODE END MX_GPIO_Init_2 */
 }
 
-
-// Bloquea el programa en caso de Error
+/**
+  * @brief  This function is executed in case of error occurrence.
+  * @retval None
+  */
 void Error_Handler(void)
 {
   /* USER CODE BEGIN Error_Handler_Debug */
@@ -315,4 +319,3 @@ void assert_failed(uint8_t *file, uint32_t line)
   /* USER CODE END 6 */
 }
 #endif /* USE_FULL_ASSERT */
-

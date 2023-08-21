@@ -28,9 +28,13 @@ extern "C" {
 
 /* Includes ------------------------------------------------------------------*/
 #include "stm32f4xx_hal.h"
+//#include "stm32f429ZI.h"
 #include "DS1307.h"
 #include "LCD04x16.h"
-#include "API_uart.h"
+#include "API_Uart.h"
+#include "MEF.h"
+#include "API_delay.h"
+
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
@@ -41,6 +45,7 @@ extern "C" {
 /* USER CODE BEGIN ET */
 #define API_OK		HAL_OK			//Logica invertida 0 es ok
 #define API_ERROR	HAL_ERROR       // 1 es ERROR
+#define LED_ON		1
 
 /* USER CODE END ET */
 

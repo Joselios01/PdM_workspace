@@ -20,8 +20,6 @@
 
 void LCD04x16_init (void);
 void LCD04x16_TxCmd(char LCD_Cmd);
-void lcd_send_cmd4bits(void);
-//void lcd_send_cmd(char LCD_Cmd);
 void LCD04x16_TxChar(char LCD_Dat);
 void lcd_BackLigth (bool state);
 

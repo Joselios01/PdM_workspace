@@ -29,13 +29,12 @@ char data[10];
 #define Reg_Year    6  // Reg_Device Año
 
 #define DS1307_Error_Delay	100   // frecuencia de led en caso de error en Driver DS1307
+#define tx_two_bytes         2
 
 /* Private defines -----------------------------------------------------------*/
 /* Private functions prototypes ----------------------------------------------*/
 
-
-
-/* DS1307_();  ------------------------------------------------------------------------------------*/
+/* DS1307_Init();  ------------------------------------------------------------------------------------*/
 /* recibe   : no recibe datos
  * devuelve : Bloquea en caso de inicializar dispositivo erroneamente
  * Es una funcion Bloqueante, en caso de error
@@ -46,7 +45,6 @@ void DS1307_Init(void)
 	i2c_Init();
 }
 
-
 /* DS1307_SetTime(puntero a char de 6 posiciones fijas);  ---------------------------------------------------*/
 /* recibe   : puntero a char de 6 posiciones
  * devuelve : respuesta de Error en la escritura.
@@ -55,17 +53,23 @@ void DS1307_Init(void)
  */
 bool DS1307_SetTime(char * ptr_dtime) //(Hour,Min,Sec)
 {
-	bool resp= API_OK;
+	assert(ptr_dtime != NULL);
 
-	  char tx_dat;
-	  tx_dat= ((ptr_dtime[0] & 0x0f) << 4) | (ptr_dtime[1] & 0x0f); // ASCII to BCD
-	  if( API_ERROR == i2c_Write_RegDataByte(DevAddress, Reg_Hour, tx_dat))
+	bool resp= API_OK;
+	char tx_dat[2];
+	tx_dat[0]= Reg_Hour;
+	tx_dat[1]= ((ptr_dtime[0] & 0x0f) << 4) | (ptr_dtime[1] & 0x0f); // ASCII to BCD
+	if( API_ERROR == i2c_Write(DevAddress, tx_dat,tx_two_bytes))
 		  resp = API_ERROR;
-	  tx_dat= ((ptr_dtime[2] & 0x0f) << 4) | (ptr_dtime[3] & 0x0f); // ASCII to BCD
-	  if( API_ERROR == i2c_Write_RegDataByte(DevAddress, Reg_Min, tx_dat))
+
+	tx_dat[0]= Reg_Min;
+	tx_dat[1]= ((ptr_dtime[2] & 0x0f) << 4) | (ptr_dtime[3] & 0x0f); // ASCII to BCD
+	if( API_ERROR == i2c_Write(DevAddress, tx_dat,tx_two_bytes))
 		  resp = API_ERROR;
-	  tx_dat= ((ptr_dtime[4] & 0x0f) << 4) | (ptr_dtime[5] & 0x0f); // ASCII to BCD
-	  if( API_ERROR == i2c_Write_RegDataByte(DevAddress, Reg_Sec, tx_dat))
+
+	tx_dat[0]= Reg_Sec;
+	tx_dat[1]= ((ptr_dtime[4] & 0x0f) << 4) | (ptr_dtime[5] & 0x0f); // ASCII to BCD
+	if( API_ERROR == i2c_Write(DevAddress, tx_dat,tx_two_bytes))
 		  resp = API_ERROR;
 
    return resp;
@@ -80,18 +84,24 @@ bool DS1307_SetTime(char * ptr_dtime) //(Hour,Min,Sec)
  */
 bool DS1307_SetDate(char * ptr_ddate)   //Day,Month,Year)
 {
+
+	assert(ptr_ddate != NULL);
+
 	bool resp= API_OK;
-	 char tx_dat;
-	  tx_dat= ((ptr_ddate[0] & 0x0f) << 4) | (ptr_ddate[1] & 0x0f); // ASCII to BCD
-	  if( API_ERROR == i2c_Write_RegDataByte(DevAddress, Reg_Day, tx_dat))
+	char tx_dat[2];
+	tx_dat[0]= Reg_Day;
+	tx_dat[1]= ((ptr_ddate[0] & 0x0f) << 4) | (ptr_ddate[1] & 0x0f); // ASCII to BCD
+	if( API_ERROR == i2c_Write(DevAddress, tx_dat,tx_two_bytes))
 		  resp = API_ERROR;
 
-	  tx_dat= ((ptr_ddate[2] & 0x0f) << 4) | (ptr_ddate[3] & 0x0f); // ASCII to BCD
-	  if( API_ERROR == i2c_Write_RegDataByte(DevAddress, Reg_Month, tx_dat))
+	tx_dat[0]= Reg_Month;
+	tx_dat[1]= ((ptr_ddate[2] & 0x0f) << 4) | (ptr_ddate[3] & 0x0f); // ASCII to BCD
+	if( API_ERROR == i2c_Write(DevAddress, tx_dat,tx_two_bytes))
 		  resp = API_ERROR;
 
-	  tx_dat= ((ptr_ddate[4] & 0x0f) << 4) | (ptr_ddate[5] & 0x0f); // ASCII to BCD
-	  if( API_ERROR == i2c_Write_RegDataByte(DevAddress, Reg_Year, tx_dat))
+	tx_dat[0]= Reg_Year;
+	tx_dat[1]= ((ptr_ddate[4] & 0x0f) << 4) | (ptr_ddate[5] & 0x0f); // ASCII to BCD
+	if( API_ERROR == i2c_Write(DevAddress, tx_dat,tx_two_bytes))
 		  resp = API_ERROR;
 
 	  return resp;
@@ -106,11 +116,12 @@ bool DS1307_SetDate(char * ptr_ddate)   //Day,Month,Year)
  */
 void DS1307_GetDate(char hora[len_Wdate])
 {
-	if (HAL_OK != i2c_RegRead(DevAddress,Reg_Day,(uint8_t * ) hora, len_Bdate))
+
+
+	hora[0]= Reg_Day;
+	if (HAL_OK != i2c_Read(DevAddress,(uint8_t * ) hora, len_Bdate))
 		DS1307_Error();
-    					 // 6 char, formato "ddmmyy" [0] decena de d
-
-
+	// entrega en hora el BCD de hms en tres bytes
     // convierte BCD del DS1307 en ASCII para entregarlo.
 	hora[5]= (hora[2] & 0x0f) | ascii_mask ;        //unidad año
 	hora[4]= (hora[2] & 0xf0) >> 4 | ascii_mask;    //decena año
@@ -121,9 +132,6 @@ void DS1307_GetDate(char hora[len_Wdate])
 
 }
 
-
-
-
 /* DS1307_GetTime(char[6]);  ---------------------------------------------------*/
 /* recibe   :char de 6 posiciones
  * devuelve :lee i2c y entrega en formato hhmmss
@@ -132,7 +140,8 @@ void DS1307_GetDate(char hora[len_Wdate])
  */
 void DS1307_GetTime(char fecha[len_Wtime])
 {
-	if (HAL_OK != i2c_RegRead(DevAddress,Reg_Sec,(uint8_t *) fecha, len_Btime))
+	fecha[0]= Reg_Sec;
+	if (HAL_OK != i2c_Read(DevAddress,(uint8_t * ) fecha, len_Bdate))
 		DS1307_Error();  // error de lectura
     					 // 6 char, formato "hhmmss" [0] decena de h
 
@@ -146,7 +155,6 @@ void DS1307_GetTime(char fecha[len_Wtime])
 	fecha[0]= (fecha[0] & 0xf0) >> 4 | ascii_mask; //decena Hr
 
 }
-
 
 /* DS1307_Error();  ---------------------------------------------------*/
 /* no recibe datos

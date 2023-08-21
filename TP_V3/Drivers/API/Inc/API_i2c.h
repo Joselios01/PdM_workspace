@@ -22,13 +22,10 @@
 
 /* Private functions prototypes ----------------------------------------------*/
 /*
-bool i2c_SetRegDev     (uint8_t Addr_Device, uint8_t Reg_Device);
-bool i2c_Write_OneByte (uint8_t Addr_Device, char DataLoad);
-bool i2c_Write_Str     (uint8_t Addr_Device, uint8_t * DataLoad);
-*/
-bool i2c_Write_RegDataByte(uint8_t Addr_Device, uint8_t Reg_Device, char DataLoad);
-bool i2c_RegRead          (uint8_t Addr_Device, uint8_t Reg_Device, char * ptr_rxbuf, uint8_t long_trama);
-bool i2c_WriteTrama       (uint8_t Addr_Device, char * ptr_txbuf, uint8_t long_trama);
 
+*/
 void i2c_Init(void);
+bool i2c_Read  (uint8_t Addr_Device, char * ptr_txbuf, uint8_t long_trama);
+bool i2c_Write (uint8_t Addr_Device, char * ptr_txbuf, uint8_t long_trama);
+
 

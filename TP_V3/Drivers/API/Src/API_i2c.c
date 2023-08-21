@@ -20,21 +20,17 @@ I2C_HandleTypeDef hi2c1;
 #define		len_TxOneByte		1    //
 #define		len_TxTwoByte		2    //
 
-
-/* Private defines -----------------------------------------------------------*/
 /* Private functions prototypes ----------------------------------------------*/
 void i2c_Handler_Error(void);
 
 
 /* Name & Code of Function ---------------------------------------------------*/
-//
-//
 
-
-
+/* i2c_Init()------------- ---------------------------------------------------*/
+// incluye la conguracin tanto del periferico como de los pines fisicos
+// la funcion bloquea en caso de error de incializacion
 void i2c_Init(void)
 {
-
 	GPIO_InitTypeDef GPIO_InitStruct = {0};
     __HAL_RCC_GPIOB_CLK_ENABLE();
 	GPIO_InitStruct.Pin = GPIO_PIN_8|GPIO_PIN_9;
@@ -58,10 +54,11 @@ void i2c_Init(void)
 	  i2c_Handler_Error();
   if (HAL_I2CEx_ConfigDigitalFilter(&hi2c1, 0) != HAL_OK)
 	  i2c_Handler_Error();
-
 }
 
-
+/* i2c_Handler_Error()--------------------------------------------------------*/
+// Funcion de error, hace blinking sobre el led rojo
+// la funcion bloquea mostrando el error
 void i2c_Handler_Error(void)
 {
 	BSP_LED_Init(LED1);
@@ -75,79 +72,46 @@ void i2c_Handler_Error(void)
 }
 
 
-bool i2c_Write_RegDataByte(uint8_t Addr_Device, uint8_t Reg_Device, char DataLoad)
-{
-    bool resp= API_OK;
-	char dat[2];
-	dat[0]=Reg_Device;
-	dat[1]=DataLoad;
 
-	if (HAL_OK != HAL_I2C_Master_Transmit(&hi2c1, Addr_Device,(uint8_t *) dat , len_TxTwoByte, TimeOut_I2C))
-		resp = API_ERROR;
-
-	return resp;
-}
-
-
-bool i2c_RegRead(uint8_t Addr_Device, uint8_t Reg_Device, char * ptr_txbuf, uint8_t long_trama)
+/* i2c_Read(DevAddress,(uint8_t * ) dato, longitud)---------------------------*/
+// Funcion de lectura de puerto I2C, configurando en la primera posicion de dato,
+// un valor a enviar para la direccion a leer.
+// la funcion realiza lectura entregando dato en el puntero ptr_txbuf
+// Devuelve API_ERROR en caso de falla ya sea en escritura o en lectura.
+// quien llama la funcion debe procesar la falla
+bool i2c_Read(uint8_t Addr_Device, char * ptr_txbuf, uint8_t long_trama)
 {
 	bool resp = API_OK;
-	char data[3];
-	data[0]=Reg_Device;
-	if (HAL_OK != HAL_I2C_Master_Transmit(&hi2c1, Addr_Device,(uint8_t *) data , 1, TimeOut_I2C))
+	if (HAL_OK != HAL_I2C_Master_Transmit(&hi2c1, Addr_Device,(uint8_t *) ptr_txbuf , 1, TimeOut_I2C))
 		resp = API_ERROR;
 
-	if (HAL_OK != HAL_I2C_Master_Receive (&hi2c1, Addr_Device, (uint8_t *) ptr_txbuf , long_trama , TimeOut_I2C))
-		resp = API_ERROR;
-
-	return resp;
-
-}
-
-
-bool i2c_WriteTrama(uint8_t Addr_Device, char * ptr_txbuf, uint8_t long_trama)
-{
-    bool resp = API_OK;
-
-	char dat[long_trama];
-
-	for (int i=0;i<long_trama;i++)
-	  {
-	  dat[i]= ptr_txbuf[i];
-	  }
-
-	if (HAL_OK != HAL_I2C_Master_Transmit(&hi2c1, Addr_Device,(uint8_t *) dat , long_trama, TimeOut_I2C))
+	if (HAL_OK != HAL_I2C_Master_Receive (&hi2c1, Addr_Device,(uint8_t *) ptr_txbuf , long_trama , TimeOut_I2C))
 		resp = API_ERROR;
 
 	return resp;
 }
 
 
-/*
-bool i2c_SetRegDev(uint8_t Addr_Device, uint8_t Reg_Device)
+/* i2c_wirte(DevAddress,(uint8_t * ) dato, longitud)---------------------------*/
+// Funcion de ecritura por puerto I2C, configurando en la primera posicion de ptr_txbuf,
+// un valor a enviar para la direccion a escribir.
+// la funcion realiza escritura del puntero en el I2C controlado por la longitud
+// de datoa enviar.
+// Devuelve API_ERROR en caso de falla en escritura.
+// quien llama la funcion debe procesar la falla
+bool i2c_Write(uint8_t Addr_Device, char * ptr_txbuf, uint8_t long_trama)
 {
+	assert(ptr_txbuf != NULL);
 	bool resp = API_OK;
-//	char data[3];
-//	data[0]=Reg_Device;
-	if(HAL_OK != HAL_I2C_Master_Transmit(&hi2c1, Addr_Device,(uint8_t *) Reg_Device , 1, TimeOut_I2C))
-		resp = API_ERROR;
 
-	return resp;
-
-}
-
-
-
-
-bool i2c_Write_OneByte(uint8_t Addr_Device, char DataLoad)
-{
-    bool resp= API_OK;
-
-	if (HAL_OK != HAL_I2C_Master_Transmit(&hi2c1, Addr_Device,DataLoad , len_TxOneByte, TimeOut_I2C))
+	if (HAL_OK != HAL_I2C_Master_Transmit(&hi2c1, Addr_Device,(uint8_t *) ptr_txbuf , long_trama, TimeOut_I2C))
 		resp = API_ERROR;
 
 	return resp;
 }
 
-*/
+
+
+
+
 
